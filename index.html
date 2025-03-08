@@ -26,6 +26,39 @@
             font-weight: bold;
             text-transform: uppercase;
             z-index: 1001;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        #header span {
+            margin-left: 20px;
+        }
+
+        #playlistLoader {
+            display: flex;
+            align-items: center;
+            margin-right: 20px;
+        }
+
+        #urlInput { 
+            width: 250px; 
+            padding: 8px; 
+            font-size: 14px;
+            margin-right: 10px;
+            border-radius: 5px;
+            border: none;
+        }
+
+        #loadButton {
+            padding: 8px 12px;
+            font-size: 14px;
+            cursor: pointer;
+            background: orange;
+            border: none;
+            border-radius: 5px;
+            color: white;
+            font-weight: bold;
         }
 
         #fixedContainer {
@@ -37,30 +70,6 @@
             padding: 0;
             z-index: 1000;
             box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.5);
-        }
-
-        #inputContainer {
-            padding: 15px;
-            background: white;
-        }
-
-        #urlInput { 
-            width: 60%; 
-            padding: 10px; 
-            font-size: 16px;
-            margin-right: 10px;
-        }
-
-        #loadButton {
-            padding: 10px 15px;
-            font-size: 16px;
-            cursor: pointer;
-        }
-
-        #separator {
-            background: red;
-            height: 40px;
-            width: 100%;
         }
 
         #playerContainer {
@@ -130,22 +139,46 @@
             right: 10px;
         }
 
-        video:-webkit-full-screen + .arrow {
-            display: block;
+        @media (max-width: 768px) {
+            #playerContainer {
+                min-height: 250px;
+            }
+
+            #videoPlayer {
+                height: 200px;
+            }
+
+            .stream-item img {
+                width: 60px;
+                height: 60px;
+            }
+
+            #urlInput {
+                width: 180px;
+            }
+
+            #header {
+                flex-direction: column;
+                text-align: center;
+                padding: 10px;
+            }
+
+            #playlistLoader {
+                margin-top: 10px;
+            }
         }
     </style>
 </head>
 <body>
-    <div id="header">TV BALEIA</div>
-
-    <div id="fixedContainer">
-        <div id="inputContainer">
+    <div id="header">
+        <span>TV BALEIA</span>
+        <div id="playlistLoader">
             <input type="text" id="urlInput" placeholder="Insira a URL do arquivo M3U">
             <button id="loadButton" onclick="loadM3U()">Carregar</button>
         </div>
+    </div>
 
-        <div id="separator"></div>
-
+    <div id="fixedContainer">
         <div id="playerContainer">
             <button class="arrow arrow-left" onclick="prevChannel()">&#9665;</button>
             <video id="videoPlayer" class="video-js vjs-default-skin" controls width="640" height="360" poster="https://cdn.pixabay.com/photo/2020/11/30/18/14/smpte-color-bars-5791787_1280.png">
@@ -174,34 +207,23 @@
 
         function initializePlayer() {
             player.src({ src: defaultStreamUrl, type: "application/x-mpegURL" });
-
             player.ready(() => {
                 player.muted(true);
-                player.play().catch(error => console.warn("Autoplay bloqueado pelo navegador."));
+                player.play().catch(() => console.warn("Autoplay bloqueado pelo navegador."));
             });
         }
-
-        player.on('error', function() {
-            console.warn("Erro ao carregar a stream. Exibindo COLOR BARS.");
-            document.getElementById('videoPlayer').poster = colorBars;
-            player.pause();
-        });
 
         async function loadM3U(url = defaultM3UUrl) {
             try {
                 let response = await fetch(url);
                 let text = await response.text();
                 streamUrls = extractM3UStreams(text);
-
                 if (streamUrls.length > 0) {
                     populateStreamList(streamUrls);
                     playStream(0);
-                } else {
-                    alert("Nenhuma stream encontrada no arquivo M3U.");
                 }
             } catch (error) {
                 console.error("Erro ao carregar a lista M3U:", error);
-                alert("Erro ao carregar a lista. Verifique a URL.");
             }
         }
 
@@ -228,7 +250,6 @@
         function populateStreamList(streams) {
             let streamList = document.getElementById('streamList');
             streamList.innerHTML = "";
-
             streams.forEach((stream, index) => {
                 let listItem = document.createElement("li");
                 listItem.className = "stream-item";
@@ -237,7 +258,6 @@
                 let img = document.createElement("img");
                 img.src = stream.logo;
                 listItem.appendChild(img);
-
                 streamList.appendChild(listItem);
             });
         }
