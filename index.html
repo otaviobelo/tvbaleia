@@ -14,7 +14,6 @@
             padding: 0;
         }
 
-        /* Container fixo para entrada e player */
         #fixedContainer {
             position: fixed;
             top: 0;
@@ -26,7 +25,6 @@
             box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.5);
         }
 
-        /* Campo de entrada acima do player */
         #inputContainer {
             padding: 15px;
             background: white;
@@ -45,19 +43,18 @@
             cursor: pointer;
         }
 
-        /* Tarja vermelha separando o input do player */
         #separator {
             background: red;
             height: 40px;
             width: 100%;
         }
 
-        /* Player fixo logo abaixo da tarja */
         #playerContainer {
             width: 100%;
             background: black;
             padding: 10px 0;
-            min-height: 400px; /* Evita corte em telas pequenas */
+            min-height: 400px;
+            position: relative;
         }
 
         #videoPlayer {
@@ -65,9 +62,8 @@
             height: 360px;
         }
 
-        /* Adiciona espaço para evitar sobreposição do player */
         #content {
-            margin-top: 550px; /* Ajustado para evitar sobreposição */
+            margin-top: 550px;
             padding: 10px;
         }
 
@@ -90,32 +86,51 @@
         #streamList li:hover { 
             background-color: darkorange; 
         }
+
+        .arrow {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(0, 0, 0, 0.5);
+            color: white;
+            border: none;
+            padding: 10px;
+            font-size: 24px;
+            cursor: pointer;
+            z-index: 1002;
+        }
+
+        .arrow-left {
+            left: 10px;
+        }
+
+        .arrow-right {
+            right: 10px;
+        }
+
+        video:-webkit-full-screen + .arrow {
+            display: block;
+        }
     </style>
 </head>
 <body>
-
-    <!-- Container fixo para o campo de URL e player -->
     <div id="fixedContainer">
-        
-        <!-- Campo de entrada -->
         <div id="inputContainer">
             <input type="text" id="urlInput" placeholder="Insira a URL do arquivo M3U">
             <button id="loadButton" onclick="loadM3U()">Carregar</button>
         </div>
 
-        <!-- Tarja vermelha de separação -->
         <div id="separator"></div>
 
-        <!-- Player fixo -->
         <div id="playerContainer">
-            <video id="videoPlayer" class="video-js vjs-default-skin" controls width="640" height="360">
-                <source src="" type="application/x-mpegURL">
+            <button class="arrow arrow-left" onclick="prevChannel()">&#9665;</button>
+            <video id="videoPlayer" class="video-js vjs-default-skin" controls width="640" height="360" poster="https://upload.wikimedia.org/wikipedia/commons/4/4e/SMPTE_Color_Bars.svg">
+                <source src="https://appletree-mytime-samsungbrazil.amagi.tv/playlist.m3u8" type="application/x-mpegURL">
             </video>
+            <button class="arrow arrow-right" onclick="nextChannel()">&#9655;</button>
         </div>
-
     </div>
 
-    <!-- Conteúdo abaixo do player -->
     <div id="content">
         <h2>IPTV Player com Video.js</h2>
         <ul id="streamList"></ul>
@@ -123,6 +138,12 @@
 
     <script>
         var player = videojs('videoPlayer');
+        var streamUrls = ["https://appletree-mytime-samsungbrazil.amagi.tv/playlist.m3u8"];
+        var currentIndex = 0;
+
+        player.on('error', function() {
+            document.getElementById('videoPlayer').poster = "https://upload.wikimedia.org/wikipedia/commons/4/4e/SMPTE_Color_Bars.svg";
+        });
 
         async function loadM3U() {
             let url = document.getElementById('urlInput').value;
@@ -134,12 +155,11 @@
             try {
                 let response = await fetch(url);
                 let text = await response.text();
-                let streamUrls = extractM3UStreams(text);
+                streamUrls = extractM3UStreams(text);
 
                 if (streamUrls.length > 0) {
                     populateStreamList(streamUrls);
-                    player.src({ src: streamUrls[0], type: "application/x-mpegURL" });
-                    player.play();
+                    playStream(0);
                 } else {
                     alert("Nenhuma stream encontrada no arquivo M3U.");
                 }
@@ -151,25 +171,36 @@
 
         function extractM3UStreams(m3uContent) {
             let lines = m3uContent.split("\n");
-            let streams = lines.filter(line => line.trim().startsWith("http"));
-            return streams;
+            return lines.filter(line => line.trim().startsWith("http"));
         }
 
         function populateStreamList(streamUrls) {
             let streamList = document.getElementById('streamList');
             streamList.innerHTML = "";
 
-            streamUrls.forEach(url => {
+            streamUrls.forEach((url, index) => {
                 let listItem = document.createElement("li");
                 listItem.textContent = url;
-                listItem.onclick = () => {
-                    player.src({ src: url, type: "application/x-mpegURL" });
-                    player.play();
-                };
+                listItem.onclick = () => playStream(index);
                 streamList.appendChild(listItem);
             });
         }
-    </script>
 
+        function playStream(index) {
+            currentIndex = index;
+            player.src({ src: streamUrls[index], type: "application/x-mpegURL" });
+            player.play();
+        }
+
+        function nextChannel() {
+            currentIndex = (currentIndex + 1) % streamUrls.length;
+            playStream(currentIndex);
+        }
+
+        function prevChannel() {
+            currentIndex = (currentIndex - 1 + streamUrls.length) % streamUrls.length;
+            playStream(currentIndex);
+        }
+    </script>
 </body>
 </html>
